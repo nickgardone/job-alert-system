@@ -1,0 +1,28 @@
+[
+  {
+    "name": "Airbnb",
+    "type": "greenhouse",
+    "board_token": "airbnb",
+    "filter": "product"
+  },
+  {
+    "name": "Apollo.io",
+    "type": "greenhouse",
+    "board_token": "apolloio",
+    "filter": "product"
+  },
+  {
+    "name": "Salesforce",
+    "type": "workday",
+    "api_url": "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs",
+    "base_url": "https://salesforce.wd12.myworkdayjobs.com/en-US/External_Career_Site",
+    "search_text": "product manager",
+    "filter": "product"
+  },
+  {
+    "name": "Superhuman",
+    "type": "playwright",
+    "url": "https://superhuman.com/company/careers/jobs",
+    "filter": "product"
+  }
+]
