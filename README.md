@@ -11,6 +11,7 @@ Runs daily at 9 AM UTC via GitHub Actions. Checks each company's job board API, 
 - Apollo.io (Greenhouse API)
 - Salesforce (Workday API)
 - Superhuman (Ashby API)
+- Playlist (Greenhouse API — three boards: playlist, mindbody, classpass)
 
 ## Setup
 
@@ -37,7 +38,7 @@ ATS_KEYWORDS = ["greenhouse", "lever", "ashby", "workday", "myworkdayjobs"]
 Then add an entry to `companies.json` with the appropriate `type` and credentials, and run `--seed` before pushing.
 
 **Supported fetcher types in `companies.json`:**
-- `greenhouse` → `board_token` field
+- `greenhouse` → `board_token` (single) or `board_tokens` (array, for companies with multiple boards)
 - `workday` → `api_url`, `base_url`, `search_text` fields
 - `ashby` → `org_name` field
 
