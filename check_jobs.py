@@ -49,21 +49,29 @@ def save_seen_ids(ids: set) -> None:
 # ---------------------------------------------------------------------------
 
 def fetch_greenhouse(company: dict) -> list[dict]:
-    token = company["board_token"]
-    url = f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs"
-    resp = requests.get(url, timeout=30)
-    resp.raise_for_status()
-    jobs = []
+    # Supports a single board_token (str) or multiple board_tokens (list).
+    tokens = company.get("board_tokens") or [company["board_token"]]
     keyword = company["filter"].lower()
-    for job in resp.json().get("jobs", []):
-        title = job.get("title", "")
-        if keyword in title.lower():
-            jobs.append({
-                "id": f"greenhouse-{job['id']}",
-                "company": company["name"],
-                "title": title,
-                "url": job.get("absolute_url", ""),
-            })
+    jobs = []
+    seen_ids: set = set()
+
+    for token in tokens:
+        url = f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs"
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        for job in resp.json().get("jobs", []):
+            job_id = job["id"]
+            if job_id in seen_ids:
+                continue  # deduplicate across boards
+            title = job.get("title", "")
+            if keyword in title.lower():
+                seen_ids.add(job_id)
+                jobs.append({
+                    "id": f"greenhouse-{job_id}",
+                    "company": company["name"],
+                    "title": title,
+                    "url": job.get("absolute_url", ""),
+                })
     return jobs
 
 

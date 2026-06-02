@@ -24,5 +24,11 @@
     "type": "ashby",
     "org_name": "Superhuman Platform Inc",
     "filter": "product"
+  },
+  {
+    "name": "Playlist",
+    "type": "greenhouse",
+    "board_tokens": ["playlist", "mindbody", "classpass"],
+    "filter": "product"
   }
 ]
