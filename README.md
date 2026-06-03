@@ -1,4 +1,4 @@
-# PM Job Monitor
+# Job Alert System
 
 Monitors target companies for new Product Manager job postings and sends email notifications when new roles appear.
 
