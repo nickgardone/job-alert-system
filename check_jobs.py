@@ -12,6 +12,7 @@ import json
 import os
 import smtplib
 import sys
+import urllib.parse
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -164,10 +165,47 @@ def fetch_ashby(company: dict) -> list[dict]:
     return jobs
 
 
+def fetch_oracle(company: dict) -> list[dict]:
+    # Oracle HCM Cloud — paginate via offset; finder param uses semicolon/comma delimiters.
+    API_URL = "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
+    PAGE_SIZE = 100
+    keyword = company["filter"].lower()
+    search_text = urllib.parse.quote(company.get("search_text", keyword))
+    jobs = []
+    offset = 0
+
+    while True:
+        finder = f"findReqs;siteNumber=CX_45001,keyword={search_text},limit={PAGE_SIZE},offset={offset},sortBy=POSTING_DATES_DESC"
+        url = f"{API_URL}?onlyData=true&expand=requisitionList&finder={finder}"
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        item = resp.json()["items"][0]
+        total = item.get("TotalJobsCount", 0)
+        postings = item.get("requisitionList", [])
+
+        for job in postings:
+            title = job.get("Title", "")
+            if keyword in title.lower():
+                job_id = job.get("Id", "")
+                jobs.append({
+                    "id": f"oracle-{job_id}",
+                    "company": company["name"],
+                    "title": title,
+                    "url": f"https://careers.oracle.com/en/sites/jobsearch/job/{job_id}",
+                })
+
+        offset += PAGE_SIZE
+        if offset >= total or not postings:
+            break
+
+    return jobs
+
+
 FETCHERS = {
     "greenhouse": fetch_greenhouse,
     "workday": fetch_workday,
     "ashby": fetch_ashby,
+    "oracle": fetch_oracle,
 }
 
 

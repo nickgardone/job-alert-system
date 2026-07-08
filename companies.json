@@ -30,5 +30,25 @@
     "type": "greenhouse",
     "board_tokens": ["playlist", "mindbody", "classpass"],
     "filter": "product"
+  },
+  {
+    "name": "CVS Health",
+    "type": "workday",
+    "api_url": "https://cvshealth.wd1.myworkdayjobs.com/wday/cxs/cvshealth/CVS_Health_Careers/jobs",
+    "base_url": "https://cvshealth.wd1.myworkdayjobs.com/en-US/CVS_Health_Careers",
+    "search_text": "digital product",
+    "filter": "digital product"
+  },
+  {
+    "name": "Hims & Hers",
+    "type": "ashby",
+    "org_name": "hims-and-hers",
+    "filter": "product manager"
+  },
+  {
+    "name": "Oracle",
+    "type": "oracle",
+    "search_text": "product manager",
+    "filter": "product manager"
   }
 ]
