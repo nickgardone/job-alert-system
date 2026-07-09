@@ -50,5 +50,11 @@
     "type": "oracle",
     "search_text": "product manager",
     "filter": "product manager"
+  },
+  {
+    "name": "Paradigm",
+    "type": "ashby",
+    "org_name": "myparadigm",
+    "filter": "product"
   }
 ]
