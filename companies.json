@@ -56,5 +56,13 @@
     "type": "ashby",
     "org_name": "myparadigm",
     "filter": "product"
+  },
+  {
+    "name": "ServiceTitan",
+    "type": "workday",
+    "api_url": "https://servicetitan.wd1.myworkdayjobs.com/wday/cxs/servicetitan/ServiceTitan/jobs",
+    "base_url": "https://servicetitan.wd1.myworkdayjobs.com/en-US/ServiceTitan",
+    "search_text": "product",
+    "filter": "product manager"
   }
 ]
