@@ -209,23 +209,34 @@ FETCHERS = {
 }
 
 
-def fetch_jobs(company: dict) -> list[dict]:
+def fetch_jobs(company: dict) -> tuple[list[dict], str | None]:
     fetcher = FETCHERS.get(company["type"])
     if not fetcher:
         print(f"  [SKIP] Unknown type '{company['type']}' for {company['name']}")
-        return []
+        return [], None
     try:
         jobs = fetcher(company)
         print(f"  {len(jobs)} matching role(s) found")
-        return jobs
+        return jobs, None
     except Exception as exc:
         print(f"  [ERROR] {exc}")
-        return []
+        return [], str(exc)
 
 
 # ---------------------------------------------------------------------------
 # Email
 # ---------------------------------------------------------------------------
+
+def _send_via_smtp(subject: str, body: str) -> None:
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = NOTIFY_EMAIL
+    msg["To"] = NOTIFY_EMAIL
+    msg.attach(MIMEText(body, "plain"))
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(NOTIFY_EMAIL, GMAIL_APP_PASSWORD)
+        server.sendmail(NOTIFY_EMAIL, NOTIFY_EMAIL, msg.as_string())
+
 
 def send_email(new_jobs: list[dict]) -> None:
     if not GMAIL_APP_PASSWORD:
@@ -243,19 +254,20 @@ def send_email(new_jobs: list[dict]) -> None:
             f"Link:     {job['url']}",
             "",
         ]
-    body = "\n".join(lines)
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = NOTIFY_EMAIL
-    msg["To"] = NOTIFY_EMAIL
-    msg.attach(MIMEText(body, "plain"))
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(NOTIFY_EMAIL, GMAIL_APP_PASSWORD)
-        server.sendmail(NOTIFY_EMAIL, NOTIFY_EMAIL, msg.as_string())
-
+    _send_via_smtp(subject, "\n".join(lines))
     print(f"Email sent: {len(new_jobs)} new role(s) to {NOTIFY_EMAIL}")
+
+
+def send_error_email(issue_summary: str) -> None:
+    if not GMAIL_APP_PASSWORD:
+        print("[ERROR] GMAIL_APP_PASSWORD not set — cannot send error email")
+        return
+
+    date_str = datetime.now().strftime("%B %-d, %Y")
+    subject = f"New PM Job Postings — {date_str} - ISSUE"
+    body = f"The job monitor encountered an issue on {date_str}.\n\n{issue_summary}"
+    _send_via_smtp(subject, body)
+    print(f"Error email sent to {NOTIFY_EMAIL}")
 
 
 # ---------------------------------------------------------------------------
@@ -271,10 +283,13 @@ def main() -> None:
     seen_ids = load_seen_ids()
     all_current_ids: set = set()
     new_jobs: list[dict] = []
+    fetch_errors: list[str] = []
 
     for company in companies:
         print(f"Checking {company['name']}...")
-        jobs = fetch_jobs(company)
+        jobs, err = fetch_jobs(company)
+        if err:
+            fetch_errors.append(f"{company['name']}: {err}")
         for job in jobs:
             all_current_ids.add(job["id"])
             if job["id"] not in seen_ids:
@@ -290,9 +305,41 @@ def main() -> None:
         return
 
     if new_jobs:
-        send_email(new_jobs)
+        try:
+            send_email(new_jobs)
+        except smtplib.SMTPAuthenticationError:
+            issue = (
+                "Email delivery failed: Gmail rejected the app password.\n\n"
+                "Fix:\n"
+                "  1. Go to https://myaccount.google.com/apppasswords\n"
+                "  2. Delete the old app password and generate a new one\n"
+                "  3. Update the GMAIL_APP_PASSWORD secret in GitHub:\n"
+                "     repo Settings → Secrets and variables → Actions"
+            )
+            print(f"[ERROR] SMTP auth failed — attempting error email")
+            try:
+                send_error_email(issue)
+            except Exception:
+                print("[ERROR] Error email also failed — exiting with code 1")
+                sys.exit(1)
+        except Exception as exc:
+            issue = f"Email delivery failed unexpectedly.\n\nError: {exc}"
+            print(f"[ERROR] send_email failed: {exc}")
+            try:
+                send_error_email(issue)
+            except Exception:
+                sys.exit(1)
     else:
         print("No new roles found.")
+
+    if fetch_errors:
+        issue = "The following companies could not be checked:\n\n" + "\n".join(
+            f"  • {e}" for e in fetch_errors
+        ) + "\n\nThis is often a transient API issue. If it persists, check the GitHub Actions log."
+        try:
+            send_error_email(issue)
+        except Exception as exc:
+            print(f"[ERROR] Could not send fetch-error email: {exc}")
 
 
 if __name__ == "__main__":
